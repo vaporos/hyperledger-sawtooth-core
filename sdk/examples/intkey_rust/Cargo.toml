@@ -1,0 +1,11 @@
+[package]
+name = "intkey_rust"
+version = "0.8.0"
+authors = ["Intel Corporation"]
+
+[dependencies]
+rust-crypto = "0.2.36"
+rustc-serialize = "0.3.22"
+zmq = "0.8"
+clap = "2"
+protobuf = "1.0.24"
