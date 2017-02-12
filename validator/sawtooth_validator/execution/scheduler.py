@@ -193,6 +193,7 @@ class BatchExecutionResult(object):
         self.state_hash = state_hash
 
 
+
 class TxnInformation(object):
     """Information about a transaction from the
      scheduler to the executor.
