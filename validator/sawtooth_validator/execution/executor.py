@@ -120,4 +120,5 @@ class TransactionExecutor(object):
             scheduler,
             self.processors,
             require_txn_processors=require_txn_processors)
+        # BUG - when do we join this thread?
         t.start()
