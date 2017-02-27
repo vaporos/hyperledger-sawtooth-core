@@ -166,8 +166,9 @@ class BlockPublisher(object):
                     self._candidate_block = self._build_block(chain_head)
         # pylint: disable=broad-except
         except Exception as exc:
-            LOGGER.exception(exc)
-            LOGGER.critical("BlockPublisher thread exited.")
+            raise
+            #LOGGER.exception(exc)
+            #LOGGER.critical("BlockPublisher thread exited.")
 
     def _finalize_block(self, block):
         if self._scheduler:
@@ -240,5 +241,6 @@ class BlockPublisher(object):
                     self.on_chain_updated(block)
         # pylint: disable=broad-except
         except Exception as exc:
-            LOGGER.exception(exc)
-            LOGGER.critical("BlockPublisher thread exited.")
+            raise
+            #LOGGER.exception(exc)
+            #LOGGER.critical("BlockPublisher thread exited.")

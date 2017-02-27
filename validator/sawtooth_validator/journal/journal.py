@@ -65,6 +65,10 @@ class Journal(object):
             except Exception as exc:
                 LOGGER.exception(exc)
                 LOGGER.critical("ChainController thread exited with error.")
+            finally:
+                LOGGER.debug(
+                    "Thread(%s) exited",
+                    self.__class__.__name__)
 
         def stop(self):
             self._exit = True
@@ -92,6 +96,10 @@ class Journal(object):
             except Exception as exc:
                 LOGGER.exception(exc)
                 LOGGER.critical("BlockPublisher thread exited with error.")
+            finally:
+                LOGGER.debug(
+                    "Thread(%s) exited",
+                    self.__class__.__name__)
 
         def stop(self):
             self._exit = True

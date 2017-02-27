@@ -183,9 +183,9 @@ class _SendReceive(object):
         self._event_loop.run_forever()
 
     def stop(self):
-        self._event_loop.stop()
+        #self._event_loop.stop()
         self._socket.close()
-        self._context.term()
+        #self._context.term()
 
 
 class Interconnect(object):
@@ -257,11 +257,13 @@ class Interconnect(object):
     def start(self, daemon=False):
         self._thread = Thread(target=self._send_receive_thread.setup,
                               args=(zmq.ROUTER,))
+        self._thread.name = 'Interconnect-' + self._thread.name
         self._thread.daemon = daemon
         self._thread.start()
 
     def stop(self):
-        self._thread.join()
+        self._send_receive_thread.stop()
+        #self._thread.join()
 
 
 class Connection(object):

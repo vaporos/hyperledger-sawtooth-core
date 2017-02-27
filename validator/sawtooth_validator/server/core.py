@@ -19,6 +19,7 @@ import hashlib
 import logging
 import os
 import time
+import threading
 
 from sawtooth_signing import pbct as signing
 
@@ -91,6 +92,9 @@ class Validator(object):
         thread_pool = ThreadPoolExecutor(max_workers=10)
         process_pool = ProcessPoolExecutor(max_workers=3)
 
+        self._thread_pool = thread_pool
+        self._process_pool = process_pool
+
         self._dispatcher.add_handler(
             validator_pb2.Message.TP_STATE_GET_REQUEST,
             tp_state_handlers.TpStateGetHandler(context_manager),
@@ -125,6 +129,7 @@ class Validator(object):
             DEFAULT_KEY_NAME)
 
         network_thread_pool = ThreadPoolExecutor(max_workers=10)
+        self._network_thread_pool = network_thread_pool
 
         self._network_dispatcher = Dispatcher()
 
@@ -244,22 +249,87 @@ class Validator(object):
                 self._journal.get_current_root), thread_pool)
 
     def start(self):
-        self._dispatcher.start()
-        self._service.start()
-        if self._genesis_controller.requires_genesis():
-            self._genesis_controller.start(self._start)
-        else:
-            self._start()
+        try:
+            self._dispatcher.start()
+            self._service.start()
+            if self._genesis_controller.requires_genesis():
+                self._genesis_controller.start(self._start)
+            else:
+                self._start()
+
+        # pylint: disable=broad-except
+        except Exception as exc:
+            #LOGGER.exception(exc)
+            self.stop()
+            raise
+
 
     def _start(self):
+        LOGGER.error("before dispatcher")
         self._network_dispatcher.start()
+        LOGGER.error("after dispatcher")
+
         self._network.start(daemon=True)
+        LOGGER.error("before gossip")
+
         self._gossip.start()
+        LOGGER.error("after gossip")
+
         self._journal.start()
+        LOGGER.error("after journal")
+
 
     def stop(self):
-        self._service.stop()
+        LOGGER.debug("waiting for network stop...")
         self._network.stop()
+        LOGGER.debug("waiting for service stop...")
+        self._service.stop()
+        #self._journal.stop()
+
+        threads = threading.enumerate()
+        for t in threads:
+            LOGGER.debug("alive thread: %s (%s)",
+                         t.name,
+                         t.__class__.__name__)
+
+        # This will remove the MainThread, which will exit when we exit with
+        # a sys.exit() or exit of main().
+        threads.remove(threading.current_thread())
+
+        LOGGER.debug("waiting on network pool shutdown...")
+        self._network_thread_pool.shutdown(wait=True)
+
+        LOGGER.debug("waiting on thread pool shutdown...")
+        self._thread_pool.shutdown(wait=True)
+
+        LOGGER.debug("waiting on process pool shutdown...")
+        self._process_pool.shutdown(wait=True)
+
+        for t in threads:
+            LOGGER.debug("stopping thread: %s (%s)",
+                         t.name,
+                         t.__class__.__name__)
+            if hasattr(t, 'stop'):
+                t.stop()
+
+        while len(threads) > 0:
+            LOGGER.debug(
+                "remaining threads: %s",
+                ", ".join(
+                    ["{} ({})".format(x.name, x.__class__.__name__)
+                     for x in threads]))
+            for t in threads.copy():
+                if not t.is_alive():
+                    LOGGER.debug("thread is dead: %s (%s)",
+                                 t.name,
+                                 t.__class__.__name__)
+                    t.join()
+                    threads.remove(t)
+                if len(threads) > 0:
+                    time.sleep(1)
+
+        LOGGER.info("All threads have been stopped and joined")
+
         self._journal.stop()
 
     @staticmethod

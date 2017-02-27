@@ -374,6 +374,9 @@ class ChainController(object):
             LOGGER.exception(exc)
             raise
 
+        LOGGER.debug("waiting on chain controller thread pool to shutdown...")
+        self._executor.shutdown(wait=True)
+
         self._notify_on_chain_updated(self._chain_head)
 
     @property

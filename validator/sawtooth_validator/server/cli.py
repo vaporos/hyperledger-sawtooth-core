@@ -109,5 +109,3 @@ def main(args=sys.argv[1:]):
         print(local_config_err, file=sys.stderr)
     except GenesisError as genesis_err:
         print(genesis_err, file=sys.stderr)
-    finally:
-        validator.stop()

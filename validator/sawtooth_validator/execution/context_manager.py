@@ -20,6 +20,7 @@ from threading import Thread
 from threading import Lock
 from threading import Condition
 from queue import Queue
+import queue
 
 from sawtooth_validator.state.merkle import MerkleDatabase
 
@@ -326,10 +327,19 @@ class _ContextReader(Thread):
         self._database = database
         self._addresses = address_queue
         self._inflated_addresses = inflated_addresses
+        self._running = True
 
-    def run(self):
-        while True:
-            context_state_addresslist_tuple = self._addresses.get(block=True)
+    def _run(self):
+        while self._running:
+            wait_on_address_queue = True
+            while wait_on_address_queue:
+                try:
+                    context_state_addresslist_tuple = self._addresses.get(
+                        block=True, timeout=0.1)
+                    wait_on_address_queue = False
+                except queue.Empty:
+                    if not self._running:
+                        return
             c_id, state_hash, address_list = context_state_addresslist_tuple
             tree = MerkleDatabase(self._database, state_hash)
             return_values = []
@@ -341,6 +351,25 @@ class _ContextReader(Thread):
                     pass
                 return_values.append((address, value))
             self._inflated_addresses.put((c_id, return_values))
+
+    def run(self):
+        try:
+            self._run()
+
+            LOGGER.debug(
+                "Thread exited: %s (%s)",
+                self.name,
+                self.__class__.__name__)
+
+        # pylint: disable=broad-except
+        except Exception as exc:
+            LOGGER.exception(exc)
+            LOGGER.critical("Thread exited with error: %s (%s)",
+                            self.name,
+                            self.__class__.__name__)
+
+    def stop(self):
+        self._running = False
 
 
 class _ContextWriter(Thread):
@@ -357,16 +386,43 @@ class _ContextWriter(Thread):
         self._inflated_addresses = inflated_addresses
 
         self._contexts = contexts
+        self._running = True
 
-    def run(self):
-        while True:
-            c_id, inflated_address_list = self._inflated_addresses.get(
-                block=True)
+    def _run(self):
+        while self._running and self._contexts:
+            wait_on_address_queue = True
+            while wait_on_address_queue:
+                try:
+                    c_id, inflated_address_list = self._inflated_addresses.get(
+                        block=True)
+                    wait_on_address_queue = False
+                except queue.Empty:
+                    if not self._running:
+                        return
+
             with self._lock:
                 if c_id in self._contexts:
                     self._contexts[c_id].set_futures(
                         {k: v for k, v in inflated_address_list})
 
+    def run(self):
+        try:
+            self._run()
+
+            LOGGER.debug(
+                "Thread exited: %s (%s)",
+                self.name,
+                self.__class__.__name__)
+
+        # pylint: disable=broad-except
+        except Exception as exc:
+            LOGGER.exception(exc)
+            LOGGER.critical("Thread exited with error: %s (%s)",
+                            self.name,
+                            self.__class__.__name__)
+
+    def stop(self):
+        self._running = False
 
 class _ContextFuture(object):
     def __init__(self, address):

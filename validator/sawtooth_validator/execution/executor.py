@@ -56,7 +56,7 @@ class TransactionExecutorThread(threading.Thread):
             self._scheduler.set_transaction_execution_result(
                 req.signature, False, req.context_id)
 
-    def run(self):
+    def _run(self):
         for txn_info in self._scheduler:
             txn = txn_info.txn
             header = transaction_pb2.TransactionHeader()
@@ -101,6 +101,22 @@ class TransactionExecutorThread(threading.Thread):
                 identity=identity,
                 has_callback=True)
             future.add_callback(self._future_done_callback)
+
+    def run(self):
+        try:
+            self._run()
+
+            LOGGER.debug(
+                "Thread exited: %s (%s)",
+                self.name,
+                self.__class__.__name__)
+
+        # pylint: disable=broad-except
+        except Exception as exc:
+            LOGGER.exception(exc)
+            LOGGER.critical("Thread exited with error: %s (%s)",
+                            self.name,
+                            self.__class__.__name__)
 
 
 class TransactionExecutor(object):
