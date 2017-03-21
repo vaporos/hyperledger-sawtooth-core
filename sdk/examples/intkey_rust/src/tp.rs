@@ -8,6 +8,7 @@ pub trait TransactionHandler<'a> {
     fn family_name(&'a self) -> &'a String;
     fn family_versions(&'a self) -> &'a Vec<String>;
     fn encodings(&'a self) -> &'a Vec<String>;
+    fn namespaces(&'a self) -> &'a Vec<String>;
 }
 
 impl<'a, 'b> TransactionProcessor<'a, 'b> {

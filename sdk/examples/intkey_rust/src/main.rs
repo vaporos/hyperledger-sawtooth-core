@@ -16,25 +16,25 @@ fn get_intkey_prefix() -> String {
     sha.result_str()[..6].to_string()
 }
 
-struct IntkeyTransactionHandler<'a> {
+struct IntkeyTransactionHandler {
     family_name: String,
     family_versions: Vec<String>,
     encodings: Vec<String>,
-    namespace_prefix: &'a str
+    namespaces: Vec<String>
 }
 
-impl<'a> IntkeyTransactionHandler<'a> {
+impl IntkeyTransactionHandler {
     fn new(namespace_prefix: &str) -> IntkeyTransactionHandler {
         IntkeyTransactionHandler {
             family_name: "intkey".to_string(),
             family_versions: vec!["1.0".to_string()],
             encodings: vec!["application/cbor".to_string()],
-            namespace_prefix: namespace_prefix
+            namespaces: vec![namespace_prefix.to_string()]
         }
     }
 }
 
-impl<'a> tp::TransactionHandler<'a> for IntkeyTransactionHandler<'a> {
+impl<'a> tp::TransactionHandler<'a> for IntkeyTransactionHandler {
     fn family_name(&'a self) -> &'a String {
         return &self.family_name
     }
@@ -45,6 +45,10 @@ impl<'a> tp::TransactionHandler<'a> for IntkeyTransactionHandler<'a> {
 
     fn encodings(&'a self) -> &'a Vec<String> {
         return &self.encodings
+    }
+
+    fn namespaces(&'a self) -> &'a Vec<String> {
+        return &self.namespaces
     }
 }
 
