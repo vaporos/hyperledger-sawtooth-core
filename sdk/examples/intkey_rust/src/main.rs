@@ -3,12 +3,14 @@ extern crate clap;
 
 extern crate crypto;
 extern crate rustc_serialize as serialize;
+extern crate protobuf;
 
 use clap::{Arg, App};
 use crypto::sha2;
 use crypto::digest::Digest;
 
 mod tp;
+mod processor;
 
 fn get_intkey_prefix() -> String {
     let mut sha = sha2::Sha512::new();
@@ -57,7 +59,7 @@ fn main() {
         .version(crate_version!())
         .arg(Arg::with_name("ENDPOINT")
              .long("endpoint")
-             .default_value("127.0.0.1:40000")
+             .default_value("tcp://127.0.0.1:40000")
              .help("the connection endpoint"))
         .get_matches();
 
@@ -69,5 +71,5 @@ fn main() {
     let mut processor = tp::TransactionProcessor::new(endpoint);
 
     processor.add_handler(&handler);
-    processor.start()
+    processor.start();
 }

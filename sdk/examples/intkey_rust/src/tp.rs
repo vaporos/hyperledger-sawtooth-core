@@ -1,4 +1,10 @@
 
+extern crate zmq;
+extern crate protobuf;
+
+use processor;
+use protobuf::Message;
+
 pub struct TransactionProcessor<'a, 'b> {
     endpoint: &'a str,
     handlers: Vec<&'b TransactionHandler<'b>>
@@ -26,13 +32,24 @@ impl<'a, 'b> TransactionProcessor<'a, 'b> {
     pub fn start(&self) {
         println!("connecting to endpoint: {}", self.endpoint);
 
+        let ctx = zmq::Context::new();
+        let socket = ctx.socket(zmq::REQ).unwrap();
+        socket.connect(self.endpoint).unwrap();
+
         for handler in &self.handlers {
             for version in handler.family_versions() {
                 for encoding in handler.encodings() {
-                    println!("  handler: {} {} {}",
+                    let mut request = processor::TpRegisterRequest::new();
+                    request.set_family(handler.family_name().clone());
+                    request.set_version(version.clone());
+                    request.set_encoding(encoding.clone());
+                    println!("sending TpRegisterRequest: {} {} {}",
                              &handler.family_name(),
                              &version,
                              &encoding);
+                    let serialized = request.write_to_bytes().unwrap();
+                    let x : &[u8] = &serialized;
+                    socket.send_multipart(&[x], 0).unwrap();
                 }
             }
         }
