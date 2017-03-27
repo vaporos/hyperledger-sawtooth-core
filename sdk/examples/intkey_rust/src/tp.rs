@@ -34,6 +34,7 @@ impl<'a, 'b> TransactionProcessor<'a, 'b> {
 
         let ctx = zmq::Context::new();
         let socket = ctx.socket(zmq::REQ).unwrap();
+        socket.set_identity("foobar".as_bytes());
         socket.connect(self.endpoint).unwrap();
 
         for handler in &self.handlers {
