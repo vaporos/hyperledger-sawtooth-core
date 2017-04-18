@@ -210,8 +210,9 @@ class _SendReceive(object):
             self._condition.wait_for(lambda: self._socket is not None)
         while True:
             if self._socket.getsockopt(zmq.TYPE) == zmq.ROUTER:
-                zmq_identity, msg_bytes = \
-                    yield from self._socket.recv_multipart()
+                parts = yield from self._socket.recv_multipart()
+                print(repr(parts))
+                zmq_identity, _, msg_bytes = parts
                 self._received_from_identity(zmq_identity)
             else:
                 msg_bytes = yield from self._socket.recv()
