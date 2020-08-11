@@ -1,5 +1,7 @@
 # Contributing to Hyperledger Sawtooth
 
+Please do contribute!
+
 Hyperledger Sawtooth is Apache 2.0 licensed and accepts contributions via
 [GitHub](https://github.com/hyperledger/sawtooth-core) pull requests.
 
