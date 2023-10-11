@@ -61,7 +61,7 @@ fn main() {
     let dest_path = Path::new(&out_dir).join(PROTO_DIR_NAME);
 
     if latest_change > last_build_time {
-        println!("{proto_src_files:?}");
+        //println!("{proto_src_files:?}");
         fs::create_dir_all(&dest_path).unwrap();
         protoc_rust::Codegen::new()
             .out_dir(dest_path.to_str().expect("Invalid proto destination path"))
